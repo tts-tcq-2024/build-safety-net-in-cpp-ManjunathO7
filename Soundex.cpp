@@ -1,36 +1,79 @@
 #include "Soundex.h"
-#include <cctype>
+#include <iostream>
+#include <string>
+using namespace std;
 
-char getSoundexCode(char c) {
-    c = toupper(c);
-    switch (c) {
-        case 'B': case 'F': case 'P': case 'V': return '1';
-        case 'C': case 'G': case 'J': case 'K': case 'Q': case 'S': case 'X': case 'Z': return '2';
-        case 'D': case 'T': return '3';
-        case 'L': return '4';
-        case 'M': case 'N': return '5';
-        case 'R': return '6';
-        default: return '0'; // For A, E, I, O, U, H, W, Y
-    }
+bool isAlpha(char c)
+{
+    return c >= 'A' && c <= 'Z';
 }
 
-std::string generateSoundex(const std::string& name) {
-    if (name.empty()) return "";
+char getSoundexCode(char c)
+{
+    static const char soundexTable[26] = {
+        '0', '1', '2', '3', '0', '1', '2', '0', '0', '2', // A-J
+        '2', '4', '5', '5', '0', '1', '2', '6', '2', '3', // K-T
+        '0', '1', '0', '2', '0', '2'                      // U-Z
+        };
 
-    std::string soundex(1, toupper(name[0]));
+    c = toupper(c);
+    if (isAlpha(c)) {
+        return soundexTable[c - 'A'];
+    }
+    return '0';  // For non-alphabetic characters
+}
+
+bool isNotVowel(char c)
+{
+    static const char vowels[5] = {'A', 'E', 'I', 'O', 'U'};
+    c = toupper(c);
+    for (char vowel : vowels)
+    {
+        if (c == vowel)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+bool isHOrW(char c)
+{
+    return c == 'H' || c == 'W';
+}
+
+bool shouldSkip(char code, char prevCode, char prevChar) 
+{
+    bool c1 = (code == prevCode && isNotVowel(prevChar));
+    bool c2 = isHOrW(prevChar);
+
+    return c1 || c2;
+}
+
+
+string constructSoundex(const string& name)
+{
+    string soundex(1, toupper(name[0]));
     char prevCode = getSoundexCode(name[0]);
 
-    for (size_t i = 1; i < name.length() && soundex.length() < 4; ++i) {
+    for (int i = 1; i < name.length() && soundex.length() < 4; ++i)
+    {
         char code = getSoundexCode(name[i]);
-        if (code != '0' && code != prevCode) {
+        if (isAlpha(name[i]) && code != prevCode) {
             soundex += code;
             prevCode = code;
         }
     }
+    return soundex + string(4 - soundex.length(), '0');  // Pad with zeros to 4 characters
+}
 
-    while (soundex.length() < 4) {
-        soundex += '0';
+
+string generateSoundex(const string& name)
+{
+    if (name.empty()) 
+    {
+        return "";
     }
-
-    return soundex;
+    return constructSoundex(name);
 }
