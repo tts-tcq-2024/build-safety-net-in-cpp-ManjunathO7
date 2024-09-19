@@ -1,79 +1,68 @@
 #include "Soundex.h"
-#include <iostream>
+#include<iostream>
+
 #include <string>
+#include <cctype>
+#include <unordered_map>
 using namespace std;
 
-bool isAlpha(char c)
-{
-    return c >= 'A' && c <= 'Z';
-}
-
-char getSoundexCode(char c)
-{
-    static const char soundexTable[26] = {
-        '0', '1', '2', '3', '0', '1', '2', '0', '0', '2', // A-J
-        '2', '4', '5', '5', '0', '1', '2', '6', '2', '3', // K-T
-        '0', '1', '0', '2', '0', '2'                      // U-Z
-        };
+char getSoundexCode(char c) {
+    static const char soundexCodes[] = {
+        '0', '1', '2', '3', '0', '1', '2', '0', '0', '2', '2', '4', '5', '5', '0', '1', '2', '6', '2', '3', '0', '1', '0', '2', '0', '2'
+    };
 
     c = toupper(c);
-    if (isAlpha(c)) {
-        return soundexTable[c - 'A'];
+    if (c >= 'A' && c <= 'Z') {
+        return soundexCodes[c - 'A'];
     }
-    return '0';  // For non-alphabetic characters
+    return '0';
 }
 
-bool isNotVowel(char c)
-{
-    static const char vowels[5] = {'A', 'E', 'I', 'O', 'U'};
-    c = toupper(c);
-    for (char vowel : vowels)
-    {
-        if (c == vowel)
-        {
-            return false;
-        }
+char fetch_firstchar(const std::string& name) {
+    if (name.empty()) return '\0';
+    return toupper(name[0]);
+}
+
+void appendSoundex(std::string& soundex, char code, char& prevCode) {
+    if (code != '0' && code != prevCode) {
+        soundex += code;
+        prevCode = code;
     }
-    return true;
 }
 
-
-bool isHOrW(char c)
-{
-    return c == 'H' || c == 'W';
+std::string initializeSoundex(const std::string& name, char firstChar) {
+    std::string soundex(1, firstChar);
+    char secondex = getSoundexCode(name[1]);
+    if (secondex != '0') {
+        soundex += secondex;
+    }
+    return soundex;
 }
 
-bool shouldSkip(char code, char prevCode, char prevChar) 
-{
-    bool c1 = (code == prevCode && isNotVowel(prevChar));
-    bool c2 = isHOrW(prevChar);
-
-    return c1 || c2;
-}
-
-
-string constructSoundex(const string& name)
-{
-    string soundex(1, toupper(name[0]));
-    char prevCode = getSoundexCode(name[0]);
-
-    for (int i = 1; i < name.length() && soundex.length() < 4; ++i)
+std::string processSoundex(const std::string& name, char firstChar) {
+   std::string soundex = initializeSoundex(name, firstChar);
+    char prevCode = soundex[1];
+    for (size_t i = 2; i < name.length() && soundex.length() < 4; ++i) 
     {
         char code = getSoundexCode(name[i]);
-        if (isAlpha(name[i]) && code != prevCode) {
-            soundex += code;
-            prevCode = code;
-        }
+        appendSoundex(soundex, code, prevCode);
     }
-    return soundex + string(4 - soundex.length(), '0');  // Pad with zeros to 4 characters
+
+    return soundex;
 }
 
+std::string paddingSoundex(const std::string& soundex) {
+    std::string paddedSoundex = soundex;
+    paddedSoundex.resize(4, '0');
+    return paddedSoundex;
+}
 
-string generateSoundex(const string& name)
-{
-    if (name.empty()) 
-    {
-        return "";
-    }
-    return constructSoundex(name);
+std::string generateSoundex(const std::string& name) {
+    if (name.empty()) return "";
+
+    char firstChar = fetch_firstchar(name);
+    std::string processedName = processSoundex(name, firstChar);
+    std::string paddedSoundex = paddingSoundex(processedName);
+
+    return paddedSoundex;
 }
